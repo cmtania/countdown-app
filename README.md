@@ -67,6 +67,10 @@ The root [project.yml](project.yml) declares the app, hosted unit tests, font fo
 
 `npm run icon` regenerates the opaque app icon from `docs/design/app-icon.svg`. `npm run package` creates a source archive for transferring to a Mac.
 
+`npm run artwork` exports the 12 SVG designs defined in `scripts/generate-artwork.mjs` to [docs/design/svg](docs/design/svg/) and produces their native 1x/2x/3x asset-catalog images. They include the filled/outline calendar arrows, settings/repeat/palette icons, and seaside, garden, gift, sprout, and home ticket scenery. Update the generator when changing these designs so exports remain reproducible. The face, numbers, and text stay live SwiftUI components.
+
+The home tickets use the supplied reference's proportions, large Nunito counts, cream background, and illustrated edges. The date editor keeps the paired month/day eyes and single smile; tap the year to open the standard calendar. The toolbar's more-options button reveals tags, notes, reminders, and the custom countup label. The revised screens still require simulator/device visual verification.
+
 ## Fonts and design
 
 Your supplied regular, bold, and heavy font files originally shared the PostScript name `Nunito-ExtraLight`, despite having distinct weights. Bundled copies use `CalendarNunito-Regular`, `CalendarNunito-Bold`, and `CalendarNunito-Heavy` so iOS can register all three. The glyph outlines and weights are preserved, and the original files outside this repo are untouched. The SIL Open Font License is bundled and available in Settings.

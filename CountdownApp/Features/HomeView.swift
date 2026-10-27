@@ -21,7 +21,6 @@ struct EditorRequest: Identifiable {
     @State private var glance: CGFloat = 0
     @State private var celebrating = false
     @State private var expressionTask: Task<Void, Never>?
-    @ScaledMetric(relativeTo: .largeTitle) private var pageHeight: CGFloat = 465
 
     private var ordered: [CountEvent] { model.ordered(model.kind) }
     private var selected: CountEvent? { ordered.first { $0.id == model.selectedID } ?? ordered.first }
@@ -32,35 +31,37 @@ struct EditorRequest: Identifiable {
     }
 
     var body: some View {
-        ZStack {
-            Palette.paper.ignoresSafeArea()
-            ScrollView {
-                VStack(spacing: 18) {
-                    header
-                    if model.loadFailed { recovery }
-                    else if ordered.isEmpty { emptyState }
-                    else { eventPages }
-                }.padding(.top, 12).padding(.bottom, 20)
-            }
-            .safeAreaInset(edge: .bottom, spacing: 0) { tabBar }
-            .allowsHitTesting(editor == nil && detail == nil)
-            .accessibilityHidden(editor != nil || detail != nil)
-            .overlay(alignment: .top) {
-                if let text = model.toast {
-                    Text(text).font(TypeStyle.bold(14)).foregroundStyle(.white)
-                        .padding(14).background(Palette.ink, in: Capsule())
-                        .padding(.horizontal, 20).padding(.top, 5)
-                        .accessibilityAddTraits(.updatesFrequently)
-                        .transition(.opacity).allowsHitTesting(false)
+        GeometryReader { layout in
+            ZStack {
+                Palette.paper.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 16) {
+                        header
+                        if model.loadFailed { recovery }
+                        else if ordered.isEmpty { emptyState }
+                        else { eventPages(width: layout.size.width) }
+                    }.padding(.top, 8).padding(.bottom, 12)
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) { tabBar }
+                .allowsHitTesting(editor == nil && detail == nil)
+                .accessibilityHidden(editor != nil || detail != nil)
+                .overlay(alignment: .top) {
+                    if let text = model.toast {
+                        Text(text).font(TypeStyle.bold(14)).foregroundStyle(.white)
+                            .padding(14).background(Palette.ink, in: Capsule())
+                            .padding(.horizontal, 20).padding(.top, 5)
+                            .accessibilityAddTraits(.updatesFrequently)
+                            .transition(.opacity).allowsHitTesting(false)
+                    }
                 }
             }
         }
         .overlayPreferenceValue(PanelAnchorKey.self) { anchors in
             GeometryReader { proxy in
                 if let request = editor {
-                    let fallback = CGRect(x: proxy.size.width / 2 - 47, y: proxy.size.height - 65, width: 94, height: 60)
+                    let fallback = CGRect(x: proxy.size.width / 2 - 58, y: proxy.size.height - 63, width: 116, height: 58)
                     let origin = anchors["add"].map { proxy[$0] } ?? fallback
-                    ExpandingPanel(origin: origin, canvas: proxy.size, originColor: Palette.orange,
+                    ExpandingPanel(origin: origin, canvas: proxy.size, originColor: Palette.action,
                                    motion: model.motion(reduceMotion: reduceMotion), closing: $closingEditor,
                                    onDismiss: { editor = nil; closingEditor = false }) {
                         EventEditor(event: request.event, isNew: request.isNew, onClose: { closingEditor = true }).environment(model)
@@ -110,11 +111,13 @@ struct EditorRequest: Identifiable {
                 BrandFace().frame(width: 69, height: 48)
                 Spacer()
                 if model.isDemo { Text("PREVIEW").font(TypeStyle.bold(10)).foregroundStyle(Palette.muted) }
-                Button { showSettings = true } label: { Image(systemName: "gearshape") }
-                    .buttonStyle(CircleButtonStyle()).accessibilityLabel("Settings")
+                Button { showSettings = true } label: {
+                    Image("icon-settings").resizable().frame(width: 26, height: 26)
+                        .frame(width: 44, height: 44).contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel("Settings")
             }
             HStack(alignment: .firstTextBaseline) {
-                Text(model.kind.title).font(TypeStyle.heavy(36)).minimumScaleFactor(0.7).lineLimit(1)
+                Text(model.kind.title).font(TypeStyle.heavy(39)).minimumScaleFactor(0.7).lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 4)
                 if !ordered.isEmpty {
@@ -127,8 +130,8 @@ struct EditorRequest: Identifiable {
         }.padding(.horizontal, 24)
     }
 
-    private var eventPages: some View {
-        VStack(spacing: 16) {
+    private func eventPages(width: CGFloat) -> some View {
+        VStack(spacing: 10) {
             if textSize.isAccessibilitySize {
                 if let selected { page(selected).padding(.horizontal, 24) }
                 HStack {
@@ -141,14 +144,15 @@ struct EditorRequest: Identifiable {
             } else {
                 TabView(selection: Binding(get: { model.selectedID }, set: { model.selectedID = $0 })) {
                     ForEach(ordered) { event in
-                        page(event).padding(.horizontal, 24).tag(Optional(event.id))
+                        page(event).padding(.horizontal, 20).tag(Optional(event.id))
                     }
-                }.tabViewStyle(.page(indexDisplayMode: .never)).frame(height: pageHeight)
+                }.tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(height: (width - 40) * 350 / 360 + 81)
             }
-            HStack(spacing: 9) {
+            HStack(spacing: 0) {
                 ForEach(Array(ordered.prefix(7).enumerated()), id: \.element.id) { index, event in
                     Button { withAnimation(model.motion(reduceMotion: reduceMotion)) { model.select(event) } } label: {
-                        Circle().fill(selected?.id == event.id ? Palette.orange : Palette.line).frame(width: 9, height: 9)
+                        Circle().fill(selected?.id == event.id ? Palette.action : Palette.line).frame(width: 12, height: 12)
                             .frame(width: 24, height: 30)
                     }.accessibilityLabel("Show \(event.title)").accessibilityAddTraits(selected?.id == event.id ? .isSelected : [])
                 }
@@ -157,7 +161,7 @@ struct EditorRequest: Identifiable {
             if let next {
                 Button { withAnimation(model.motion(reduceMotion: reduceMotion)) { model.select(next) } } label: {
                     EventRow(event: next, engine: model.engine, now: model.now, prefix: "Next · ")
-                }.buttonStyle(.plain).padding(.horizontal, 24)
+                }.buttonStyle(.plain).padding(.horizontal, 20)
             }
         }
     }
@@ -165,10 +169,11 @@ struct EditorRequest: Identifiable {
     private func page(_ event: CountEvent) -> some View {
         VStack(spacing: 17) {
             VStack(spacing: 4) {
-                Text(event.title).font(TypeStyle.heavy(27)).multilineTextAlignment(.center).lineLimit(2).minimumScaleFactor(0.8)
+                Text(event.title).font(TypeStyle.heavy(30)).multilineTextAlignment(.center)
+                    .lineLimit(textSize.isAccessibilitySize ? nil : 1).minimumScaleFactor(0.7)
                 Text(model.engine.formatted(model.engine.occurrence(of: event, at: model.now)))
-                    .font(TypeStyle.regular(16)).foregroundStyle(Palette.muted)
-            }.frame(minHeight: 64)
+                    .font(TypeStyle.regular(17)).foregroundStyle(Palette.muted)
+            }.frame(height: textSize.isAccessibilitySize ? nil : 64)
             Button { detail = event } label: {
                 EventTicket(event: event, count: model.engine.count(for: event, at: model.now),
                             label: model.engine.label(for: event, at: model.now), glance: glance,
@@ -187,7 +192,7 @@ struct EditorRequest: Identifiable {
                 editor = EditorRequest(event: model.newEvent(), isNew: true)
             } label: {
                 Image(systemName: "plus").font(.system(size: 28, weight: .medium))
-                    .frame(width: 94, height: 60).foregroundStyle(.white).background(Palette.orange, in: Capsule())
+                    .frame(width: 116, height: 58).foregroundStyle(.white).background(Palette.action, in: Capsule())
             }.accessibilityLabel("Add \(model.kind.singular)").disabled(model.loadFailed)
                 .anchorPreference(key: PanelAnchorKey.self, value: .bounds) { ["add": $0] }
                 .opacity(editor == nil ? 1 : 0)
@@ -203,7 +208,9 @@ struct EditorRequest: Identifiable {
             model.tickHaptic()
         } label: {
             VStack(spacing: 5) {
-                Image(systemName: kind == .countdown ? "calendar.badge.clock" : "calendar.badge.checkmark").font(.system(size: 25))
+                Image("calendar-\(kind == .countdown ? "down" : "up")\(model.kind == kind ? "-filled" : "")")
+                    .resizable().frame(width: 32, height: 32).accessibilityHidden(true)
+                    .foregroundStyle(model.kind == kind ? Palette.action : Palette.muted)
                 Text(kind.title).font(TypeStyle.bold(12)).lineLimit(1).minimumScaleFactor(0.6)
             }.frame(maxWidth: .infinity, minHeight: 56)
                 .foregroundStyle(model.kind == kind ? Palette.orange : Palette.muted)

@@ -35,29 +35,34 @@ import SwiftUI
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 22) {
-                    HStack {
-                        BrandFace(lift: saved ? 1 : 0).frame(width: 66)
-                        Spacer()
-                        Text(isNew ? (draft.kind == .countdown ? "Something to look forward to." : "A beginning worth remembering.") : "Make it yours.")
-                            .font(TypeStyle.regular(13)).foregroundStyle(Palette.muted).multilineTextAlignment(.trailing)
-                    }
+                VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 7) {
                         fieldLabel("NAME")
-                        TextField("What are we counting?", text: $draft.title).formField()
-                            .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
-                            .accessibilityLabel("Event name")
+                        HStack {
+                            TextField("What are we counting?", text: $draft.title)
+                                .focused($nameFocused).submitLabel(.done).onSubmit { nameFocused = false }
+                                .accessibilityLabel("Event name")
+                            if !draft.title.isEmpty {
+                                Button { draft.title = ""; nameFocused = true } label: {
+                                    Image(systemName: "xmark.circle.fill").foregroundStyle(Palette.muted.opacity(0.55))
+                                        .frame(width: 32, height: 32)
+                                }.accessibilityLabel("Clear event name")
+                            }
+                        }.font(TypeStyle.regular(19)).padding(.horizontal, 18).padding(.vertical, 10)
+                            .frame(minHeight: 52).background(Palette.field.opacity(0.75), in: Capsule())
                     }
                     EventDatePicker(day: $draft.date, kind: draft.kind, now: model.now)
                     VStack(spacing: 12) {
                         if draft.kind == .countdown {
-                            HStack {
-                                Label("Repeat", systemImage: "repeat")
-                                Spacer()
+                            HStack(spacing: 14) {
+                                Image("icon-repeat").resizable().frame(width: 25, height: 25).accessibilityHidden(true)
+                                Text("Repeat")
+                                Spacer(minLength: 8)
                                 Picker("Repeat", selection: $draft.recurrence) {
                                     ForEach(Recurrence.allCases) { item in Text(item.title).tag(item) }
                                 }.labelsHidden().tint(Palette.ink)
-                            }.formField()
+                            }.padding(.horizontal, 16).padding(.vertical, 7).frame(minHeight: 50)
+                                .background(Palette.field.opacity(0.75), in: Capsule())
                             if draft.recurrence == .yearly && draft.date.month == 2 && draft.date.day == 29 {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("In non-leap years").font(TypeStyle.bold(14))
@@ -66,25 +71,32 @@ import SwiftUI
                                     }.pickerStyle(.segmented)
                                 }.formField()
                             }
-                        } else {
-                            VStack(alignment: .leading, spacing: 7) {
-                                fieldLabel("DAY LABEL")
-                                TextField("days since", text: $draft.dayLabel).formField().accessibilityLabel("Day label")
-                            }
                         }
                         Button { nameFocused = false; showAppearance = true } label: {
                             HStack(spacing: 10) {
-                                Image(systemName: "paintpalette")
-                                Text("Appearance").font(TypeStyle.regular(17))
-                                Spacer()
-                                Circle().fill(draft.theme.color).frame(width: 24, height: 24)
-                                    .overlay(Circle().stroke(Palette.line))
-                                Mascot(illustration: draft.illustration).frame(width: 40, height: 40)
-                                Image(systemName: "chevron.right").font(.system(size: 12))
-                            }.formField()
+                                Image("icon-palette").resizable().frame(width: 25, height: 25).accessibilityHidden(true)
+                                Text("Appearance").font(TypeStyle.regular(15))
+                                Spacer(minLength: 0)
+                                ViewThatFits(in: .horizontal) {
+                                    HStack(spacing: 5) {
+                                        ForEach([EventTheme.apricot, .butter, .lilac, .sage]) { theme in
+                                            Circle().fill(theme == .butter ? Palette.cheek : theme.color)
+                                                .frame(width: 23, height: 23)
+                                        }
+                                    }.fixedSize()
+                                    Color.clear.frame(width: 0, height: 0)
+                                }.accessibilityHidden(true)
+                                BrandFace(lift: saved ? 1 : 0).padding(7).frame(width: 48, height: 48)
+                                    .background(draft.theme.color.opacity(0.45), in: Circle())
+                            }.padding(.leading, 16).padding(.trailing, 5).padding(.vertical, 5)
+                                .background(Palette.field.opacity(0.75), in: Capsule())
                         }.buttonStyle(.plain).accessibilityLabel("Appearance, \(draft.theme.title), \(draft.illustration.title)")
-                        DisclosureGroup("Tag, note & reminder", isExpanded: $showMore) {
+                        if showMore {
                             VStack(alignment: .leading, spacing: 16) {
+                                fieldLabel("MORE OPTIONS")
+                                if draft.kind == .countup {
+                                    TextField("days since", text: $draft.dayLabel).formField().accessibilityLabel("Day label")
+                                }
                                 TextField("Tag, e.g. Travel", text: $draft.tag).formField().accessibilityLabel("Tag")
                                 TextField("A little note", text: $draft.note, axis: .vertical).lineLimit(3...6).formField().accessibilityLabel("Note")
                                 if draft.kind == .countdown {
@@ -92,15 +104,13 @@ import SwiftUI
                                     Text(model.preferences.reminders ? "At 9:00 AM local time. Today's reminder is skipped if that time has passed." : "Enable reminders in Settings to receive these at 9:00 AM local time.")
                                         .font(TypeStyle.regular(12)).foregroundStyle(Palette.muted)
                                 }
-                            }.padding(.top, 12)
-                        }.font(TypeStyle.bold(14)).tint(Palette.orange).padding(.horizontal, 4)
+                            }.padding(.top, 12).font(TypeStyle.bold(14)).tint(Palette.orange).padding(.horizontal, 4)
+                        }
                     }
                     if let error, !draft.title.isEmpty {
                         Text(error).font(TypeStyle.bold(13)).foregroundStyle(Palette.orange).multilineTextAlignment(.center)
                     }
-                    Text("Saved on this iPhone. No account needed.")
-                        .font(TypeStyle.regular(12)).foregroundStyle(Palette.muted).padding(.bottom, 4)
-                }.padding(24)
+                }.padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 16)
             }
             .scrollDismissesKeyboard(.interactively)
             .background(Palette.paper)
@@ -109,8 +119,14 @@ import SwiftUI
             .toolbarBackground(Palette.paper, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { attemptClose() } label: { Image(systemName: "xmark") }
+                    Button { attemptClose() } label: {
+                        Image(systemName: "xmark").font(.system(size: 25, weight: .light)).foregroundStyle(Palette.ink)
+                    }
                         .accessibilityLabel("Close editor").disabled(saved)
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { nameFocused = false; showMore.toggle() } label: { Image(systemName: "ellipsis") }
+                        .accessibilityLabel(showMore ? "Hide more options" : draft.kind == .countdown ? "More options: tag, note and reminder" : "More options: day label, tag and note")
                 }
                 ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("Done") { nameFocused = false } }
             }
@@ -118,7 +134,7 @@ import SwiftUI
                 Button(action: save) {
                     Label(saved ? "Saved" : isNew ? "Create \(draft.kind.singular)" : "Save changes", systemImage: saved ? "checkmark" : isNew ? "plus" : "checkmark")
                 }.buttonStyle(PrimaryButtonStyle()).disabled(error != nil || saved || model.loadFailed)
-                    .opacity(error != nil ? 0.5 : 1).padding(.horizontal, 24).padding(.vertical, 12).background(Palette.paper)
+                    .opacity(error != nil ? 0.5 : 1).padding(.horizontal, 20).padding(.vertical, 12).background(Palette.paper)
             }
             .interactiveDismissDisabled(isDirty || saved)
             .confirmationDialog("Discard your changes?", isPresented: $discard, titleVisibility: .visible) {

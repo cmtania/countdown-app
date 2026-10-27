@@ -6,6 +6,7 @@ import { registerDynamicLanguage, parse } from '@ast-grep/napi';
 import xcode from 'xcode';
 import plist from 'plist';
 import { parse as parseYAML } from 'yaml';
+import sharp from 'sharp';
 
 function walk(folder) {
   return fs.readdirSync(folder, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(`${folder}/${e.name}`) : [`${folder}/${e.name}`]);
@@ -102,10 +103,25 @@ assert.deepEqual(names, ['CalendarNunito-Regular', 'CalendarNunito-Bold', 'Calen
 for (const file of walk('CountdownApp/Resources/Assets.xcassets').filter(p => p.endsWith('Contents.json'))) {
   const catalog = JSON.parse(fs.readFileSync(file, 'utf8'));
   for (const image of catalog.images ?? []) if (image.filename) assert(fs.existsSync(path.join(path.dirname(file), image.filename)));
+  const name = path.basename(path.dirname(file), '.imageset');
+  const master = path.join('docs/design/svg', `${name}.svg`);
+  if (fs.existsSync(master)) {
+    const original = await sharp(master).metadata();
+    assert.deepEqual(catalog.images.map(image => image.scale), ['1x', '2x', '3x'], `${name}: missing image scale`);
+    assert.equal(catalog.properties['template-rendering-intent'], name.startsWith('scene-') ? 'original' : 'template');
+    for (const image of catalog.images) {
+      const exported = await sharp(path.join(path.dirname(file), image.filename)).metadata();
+      const scale = Number.parseInt(image.scale, 10);
+      assert.equal(exported.width, original.width * scale, `${name}: wrong pixel width`);
+      assert.equal(exported.height, original.height * scale, `${name}: wrong pixel height`);
+      assert.equal(exported.hasAlpha, true, `${name}: preserve transparent artwork edges`);
+    }
+  }
 }
 const icon = fs.readFileSync('CountdownApp/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png');
 assert.equal(icon.readUInt32BE(16), 1024); assert.equal(icon.readUInt32BE(20), 1024);
 assert.equal(icon[25], 2, 'App icon must be opaque RGB');
 const testCases = tests.reduce((n, f) => n + (fs.readFileSync(f, 'utf8').match(/func test\w+/g) ?? []).length, 0);
 console.log(`Xcode project parsed; all Swift files referenced; resources, plist files, 1024px icon, and three distinct font names verified.`);
+console.log('SVG artwork exports verified: native pixel dimensions, 1x/2x/3x scales, transparency, and rendering modes.');
 console.log(`${testCases} XCTest cases included. Syntax/resource checks do NOT compile Swift or execute these tests.`);

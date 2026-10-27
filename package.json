@@ -5,6 +5,7 @@
   "scripts": {
     "project": "node scripts/generate-project.mjs",
     "icon": "node scripts/generate-icon.mjs",
+    "artwork": "node scripts/generate-artwork.mjs",
     "check": "node scripts/verify.mjs",
     "test:core": "swift test",
     "package": "node scripts/package-source.mjs"

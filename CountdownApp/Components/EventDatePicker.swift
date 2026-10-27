@@ -23,14 +23,14 @@ import UIKit
             GeometryReader { proxy in
                 let size = min(proxy.size.width, proxy.size.height)
                 ZStack {
-                    Circle().fill(Color.white.opacity(0.85)).shadow(color: Palette.ink.opacity(0.04), radius: 8, y: 3)
-                    ForEach(0..<36) { tick in
-                        Rectangle().fill(Palette.muted.opacity(0.35)).frame(width: 1, height: tick % 3 == 0 ? 9 : 5)
-                            .offset(y: -size / 2 + 12).rotationEffect(.degrees(Double(tick) * 10 + Double(drag) * 0.2))
+                    Circle().fill(Color(hex: 0xFFFCF5)).shadow(color: Palette.ink.opacity(0.05), radius: 8, y: 3)
+                    ForEach(0..<60) { tick in
+                        Rectangle().fill(Palette.muted.opacity(0.40)).frame(width: 1, height: tick % 5 == 0 ? 8 : 5)
+                            .offset(y: -size / 2 + 12).rotationEffect(.degrees(Double(tick) * 6 + Double(drag) * 0.2))
                     }
                     VStack(spacing: 4) {
                         Text(neighbor(-1)).font(TypeStyle.bold(size * 0.12)).foregroundStyle(Palette.muted.opacity(0.55))
-                        Text(display(value)).font(TypeStyle.heavy(size * (title == "MONTH" ? 0.24 : 0.34)))
+                        Text(display(value)).font(TypeStyle.heavy(size * (title == "MONTH" ? 0.21 : 0.31)))
                             .lineLimit(1).minimumScaleFactor(0.5)
                             .contentTransition(reduceMotion || model.preferences.gentleMotion ? .identity : title == "MONTH" ? .opacity : .numericText())
                         Text(neighbor(1)).font(TypeStyle.bold(size * 0.12)).foregroundStyle(Palette.muted.opacity(0.55))
@@ -51,7 +51,7 @@ import UIKit
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(title == "MONTH" ? "Month" : "Day")
                     .accessibilityValue(display(value))
-                    .accessibilityHint("Swipe up or down to adjust, or use the calendar below.")
+                    .accessibilityHint("Swipe up or down to adjust. Activate the year to open the calendar.")
                     .accessibilityAdjustableAction { direction in
                         if direction == .increment { change(1) }
                         if direction == .decrement { change(-1) }
@@ -90,19 +90,21 @@ import UIKit
 
     var body: some View {
         VStack(spacing: 13) {
-            Text(kind == .countdown ? "COUNT DOWN TO" : "COUNT UP FROM")
-                .font(TypeStyle.regular(11)).tracking(1.7).foregroundStyle(Palette.muted)
-            if useCalendar || textSize.isAccessibilitySize {
+            Text("CHOOSE A DATE")
+                .font(TypeStyle.regular(12)).foregroundStyle(Palette.ink)
+            if textSize.isAccessibilitySize {
                 DatePicker("Date", selection: dateBinding, displayedComponents: .date)
                     .datePickerStyle(.graphical).environment(\.calendar, engine.calendar)
                     .tint(Palette.orange)
             } else {
-                HStack(spacing: 25) {
+                HStack(spacing: 15) {
                     Button { update(year: day.year - 1, month: day.month, value: day.day); model.tickHaptic() } label: {
                         Image(systemName: "chevron.left").frame(width: 44, height: 44)
                     }.disabled(day.year <= 1).accessibilityLabel("Previous year")
-                    Text(String(day.year)).font(TypeStyle.heavy(23)).monospacedDigit()
-                        .accessibilityLabel("Year \(day.year)")
+                    Button { useCalendar = true } label: {
+                        Text(String(day.year)).font(TypeStyle.heavy(25)).monospacedDigit().frame(minHeight: 44)
+                    }.accessibilityLabel("Year \(day.year), open calendar")
+                        .accessibilityHint("Choose any date using the calendar.")
                     Button { update(year: day.year + 1, month: day.month, value: day.day); model.tickHaptic() } label: {
                         Image(systemName: "chevron.right").frame(width: 44, height: 44)
                     }.disabled(day.year >= 9999).accessibilityLabel("Next year")
@@ -115,17 +117,25 @@ import UIKit
                                      value: dayBinding, display: { String($0) }, onStep: model.tickHaptic)
                     }
                     HStack(alignment: .top, spacing: 8) {
-                        Circle().fill(Palette.cheek).frame(width: 40, height: 40).offset(y: -21)
+                        Circle().fill(Palette.cheek).frame(width: 46, height: 46).offset(y: -28)
                         BrandSmile().frame(height: 70).padding(.top, 1)
-                        Circle().fill(Palette.cheek).frame(width: 40, height: 40).offset(y: -21)
+                        Circle().fill(Palette.cheek).frame(width: 46, height: 46).offset(y: -28)
                     }.accessibilityHidden(true)
                 }
             }
             Text(dateSummary).font(TypeStyle.regular(15)).multilineTextAlignment(.center)
                 .foregroundStyle(Palette.muted).accessibilityAddTraits(.updatesFrequently)
-            Button(useCalendar ? "Use the date wheels" : "Choose from calendar") { useCalendar.toggle() }
-                .font(TypeStyle.bold(13)).padding(.vertical, 7)
-                .opacity(textSize.isAccessibilitySize ? 0 : 1).disabled(textSize.isAccessibilitySize)
+        }
+        .sheet(isPresented: $useCalendar) {
+            NavigationStack {
+                ScrollView {
+                    DatePicker(kind == .countdown ? "Count down to" : "Count up from", selection: dateBinding, displayedComponents: .date)
+                        .datePickerStyle(.graphical).environment(\.calendar, engine.calendar)
+                        .tint(Palette.orange).padding(20)
+                }.background(Palette.paper)
+                    .navigationTitle("Choose a date").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { useCalendar = false } } }
+            }.presentationDetents([.medium, .large])
         }
     }
 

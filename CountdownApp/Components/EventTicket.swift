@@ -11,6 +11,7 @@ struct TicketShape: Shape {
 }
 
 struct EventTicket: View {
+    @Environment(\.dynamicTypeSize) private var textSize
     let event: CountEvent
     let count: Int
     let label: String
@@ -19,28 +20,46 @@ struct EventTicket: View {
     var animateDigits = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            BrandEyes(glance: glance).frame(width: 150, height: 76).padding(.top, 23)
-            HStack(spacing: 8) {
-                Circle().fill(Palette.cheek).frame(width: 35, height: 35)
-                Text(count.formatted()).font(TypeStyle.heavy(136)).monospacedDigit()
-                    .minimumScaleFactor(0.3).lineLimit(1)
-                    .contentTransition(animateDigits ? .numericText(value: Double(count)) : .identity)
-                    .frame(maxWidth: .infinity)
-                Circle().fill(Palette.cheek).frame(width: 35, height: 35)
-            }.padding(.horizontal, 25).padding(.top, -4)
-            BrandSmile(lift: celebrate ? 1 : 0).frame(width: 211, height: 67).padding(.top, -7)
-            Text(label).font(TypeStyle.bold(23)).multilineTextAlignment(.center)
-                .padding(.horizontal, 24).padding(.top, 3)
-            Text(event.kind == .countup ? "A little more, every day." : "Something good is on its way.")
-                .font(TypeStyle.regular(13)).multilineTextAlignment(.center)
-                .padding(.horizontal, 28).padding(.top, 7).padding(.bottom, 30)
+        Group {
+            if textSize.isAccessibilitySize {
+                VStack(spacing: 12) {
+                    BrandFace(glance: glance, lift: celebrate ? 1 : 0).frame(width: 130)
+                    digits(size: 90).frame(maxWidth: .infinity)
+                    Text(label).font(TypeStyle.bold(23)).multilineTextAlignment(.center)
+                }.padding(30)
+            } else {
+                GeometryReader { proxy in
+                    let w = proxy.size.width, h = proxy.size.height
+                    ZStack {
+                        BrandEyes(glance: glance).frame(width: w * 0.43, height: h * 0.20)
+                            .position(x: w * 0.5, y: h * 0.16)
+                        digits(size: w * 0.405).frame(width: w * 0.65, height: h * 0.37)
+                            .position(x: w * 0.5, y: h * 0.435)
+                        ForEach([CGFloat(0.165), CGFloat(0.835)], id: \.self) { x in
+                            Circle().fill(Palette.cheek).frame(width: w * 0.145, height: w * 0.145)
+                                .position(x: w * x, y: h * 0.475)
+                        }
+                        BrandSmile(lift: celebrate ? 1 : 0).frame(width: w * 0.59, height: h * 0.19)
+                            .position(x: w * 0.5, y: h * 0.70)
+                        Text(label).font(TypeStyle.heavy(w * 0.069)).lineLimit(2).minimumScaleFactor(0.65)
+                            .multilineTextAlignment(.center).frame(width: w * 0.66, height: h * 0.12)
+                            .position(x: w * 0.5, y: h * 0.845)
+                        if event.kind == .countup {
+                            Text("A little more, every day.").font(TypeStyle.regular(w * 0.038))
+                                .lineLimit(1).minimumScaleFactor(0.7).frame(width: w * 0.66)
+                                .position(x: w * 0.5, y: h * 0.935)
+                        }
+                    }
+                }.aspectRatio(360.0 / 350.0, contentMode: .fit)
+            }
         }
         .frame(maxWidth: .infinity)
         .background {
-            ZStack(alignment: .bottom) {
+            ZStack {
                 event.theme.color
-                TicketScenery(illustration: event.illustration).frame(height: 88)
+                if !textSize.isAccessibilitySize {
+                    Image(event.illustration.sceneryAsset).resizable().scaledToFill().accessibilityHidden(true)
+                }
             }
         }
         .clipShape(TicketShape(), style: FillStyle(eoFill: true))
@@ -48,37 +67,23 @@ struct EventTicket: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(event.title), \(count) \(label)")
     }
-}
 
-private struct TicketScenery: View {
-    let illustration: Illustration
-    var body: some View {
-        GeometryReader { proxy in
-            let size = proxy.size
-            if illustration == .sun {
-                WaveShape().fill(Color(hex: 0xC7BCE7)).frame(height: 33).offset(y: size.height - 33)
-                WaveShape().stroke(.white.opacity(0.8), lineWidth: 3).frame(height: 30).offset(y: size.height - 25)
-                Path { p in
-                    p.move(to: CGPoint(x: size.width - 42, y: 4))
-                    p.addLine(to: CGPoint(x: size.width - 42, y: 47))
-                    p.addLine(to: CGPoint(x: size.width - 69, y: 47)); p.closeSubpath()
-                }.fill(Palette.cheek.opacity(0.65))
-            } else {
-                HStack {
-                    Mascot(illustration: illustration).frame(width: 50, height: 50).rotationEffect(.degrees(-13))
-                    Spacer()
-                    Mascot(illustration: illustration).frame(width: 40, height: 40).rotationEffect(.degrees(12))
-                }.padding(.horizontal, 12).offset(y: 30).opacity(0.6)
-            }
-        }.accessibilityHidden(true)
+    private func digits(size: CGFloat) -> some View {
+        Text(count.formatted()).font(TypeStyle.heavy(size)).monospacedDigit()
+            .minimumScaleFactor(0.25).lineLimit(1)
+            .contentTransition(animateDigits ? .numericText(value: Double(count)) : .identity)
     }
 }
 
-private struct WaveShape: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path(); p.move(to: CGPoint(x: 0, y: r.height * 0.4))
-        p.addCurve(to: CGPoint(x: r.width, y: r.height * 0.4), control1: CGPoint(x: r.width * 0.35, y: r.height * 1.7), control2: CGPoint(x: r.width * 0.65, y: -r.height))
-        p.addLine(to: CGPoint(x: r.width, y: r.height)); p.addLine(to: CGPoint(x: 0, y: r.height)); p.closeSubpath(); return p
+private extension Illustration {
+    var sceneryAsset: String {
+        switch self {
+        case .sun: return "scene-seaside"
+        case .flower: return "scene-garden"
+        case .gift: return "scene-gift"
+        case .sprout: return "scene-sprout"
+        case .home: return "scene-home"
+        }
     }
 }
 
@@ -89,11 +94,11 @@ struct EventRow: View {
     var prefix = ""
     var body: some View {
         HStack(spacing: 12) {
-            Mascot(illustration: event.illustration).frame(width: 54, height: 54)
+            Mascot(illustration: event.illustration).padding(7).frame(width: 60, height: 60)
                 .background(event.theme.color, in: Circle())
             VStack(alignment: .leading, spacing: 4) {
-                Text(prefix + event.title).font(TypeStyle.bold(17)).lineLimit(2)
-                Text(engine.formatted(engine.occurrence(of: event, at: now), short: true))
+                Text(prefix + event.title).font(TypeStyle.bold(16)).lineLimit(2)
+                Text(engine.formatted(engine.occurrence(of: event, at: now)))
                     .font(TypeStyle.regular(12)).foregroundStyle(Palette.muted)
             }
             Spacer(minLength: 3)
@@ -102,7 +107,7 @@ struct EventRow: View {
                 Text("days").font(TypeStyle.regular(12))
             }.frame(minWidth: 44, maxWidth: 80)
             Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-        }.padding(15).background(Palette.field.opacity(0.7), in: RoundedRectangle(cornerRadius: 24))
+        }.padding(12).background(Palette.field.opacity(0.7), in: RoundedRectangle(cornerRadius: 26))
             .accessibilityElement(children: .combine)
     }
 }

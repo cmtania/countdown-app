@@ -9,6 +9,7 @@
 - Both event types, CRUD flows, selection, browsing/search/tag filters, detailed views, share images, and trash/restore.
 - Core calendar logic, recurrence/leap policies, versioned storage, and load/write failure handling.
 - Canonical vector face, themed calendar tickets, five illustrated motifs, bundled fonts/license, and editable app icon.
+- Reference-based home/editor layout, responsive ticket proportions, illustrated scenery for all five motifs, and custom calendar-arrow navigation. Twelve reproducible SVG designs are exported into native asset catalogs at three scales.
 - Calendar-eye picker plus native date picker, motion/haptics preferences, and accessibility affordances.
 - Opt-in local reminders and notification routing, with serialized scheduling reconciliation.
 - Source-only deterministic demo mode that leaves the saved collection untouched.
@@ -21,6 +22,7 @@
 - Info.plist and privacy manifest parsed.
 - Three distinct bundled PostScript font names verified against UIAppFonts.
 - App icon dimensions and opaque RGB PNG format verified; icon visually inspected.
+- SVG scenery and navigation icons rendered into an asset review sheet and visually inspected. This is an artwork review, not a running-app screenshot.
 - Native source archive packaged and its paths checked.
 
 These checks do **not** type-check Swift, link Apple frameworks, run the app, or verify screen rendering.

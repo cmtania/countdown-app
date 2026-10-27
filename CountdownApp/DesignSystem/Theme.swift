@@ -1,14 +1,15 @@
 import SwiftUI
 
 enum Palette {
-    static let paper = Color(hex: 0xFAF5E9)
-    static let ink = Color(hex: 0x30261E)
+    static let paper = Color(hex: 0xFCF7ED)
+    static let ink = Color(hex: 0x29231B)
     static let muted = Color(hex: 0x756A5D)
     static let orange = Color(hex: 0xBF461B)
+    static let action = Color(hex: 0xF04D16)
     static let cheek = Color(hex: 0xFF8B3E)
     static let gold = Color(hex: 0xFFB33E)
     static let line = Color(hex: 0xE8DDCB)
-    static let field = Color(hex: 0xF1E8D8)
+    static let field = Color(hex: 0xF3EADC)
 }
 
 extension Color {
@@ -22,7 +23,7 @@ extension Color {
 extension EventTheme {
     var color: Color {
         switch self {
-        case .apricot: return Color(hex: 0xFFE1C5)
+        case .apricot: return Color(hex: 0xFCEBD5)
         case .lilac: return Color(hex: 0xE5DDF4)
         case .sage: return Color(hex: 0xDCE4BE)
         case .butter: return Color(hex: 0xF8E6A8)
@@ -47,8 +48,8 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(TypeStyle.bold(18)).foregroundStyle(.white)
-            .frame(maxWidth: .infinity).padding(.vertical, 17)
-            .background(Palette.orange, in: Capsule())
+            .frame(maxWidth: .infinity).padding(.vertical, 20)
+            .background(Palette.action, in: Capsule())
             .opacity(configuration.isPressed ? 0.8 : 1)
     }
 }

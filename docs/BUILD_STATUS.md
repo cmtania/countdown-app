@@ -42,7 +42,7 @@ Visually inspect a small iPhone and a large iPhone with standard and accessibili
 
 - Native validation and device motion tuning remain outstanding.
 - Custom add-button/editor and ticket/detail surface transitions are implemented but have not been visually verified or profiled on a device.
-- The display name and bundle identifier are temporary; there is no signing team or App Store record configured.
+- The display name and bundle identifier are temporary. Signing team `MD42BG8ZP4` is configured for app and tests; certificates/provisioning have not been verified, and no App Store record is configured.
 - No RevenueCat SDK, paywall, pricing, products, purchase flow, or restore flow is present because those product decisions remain open.
 - Widgets, cloud sync, exact-time events, and dedicated iPad layouts are outside this first implementation.
 - The 2027 competition's schedule, location, eligibility, and submission requirements remain unverified.

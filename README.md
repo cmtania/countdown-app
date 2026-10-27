@@ -11,7 +11,7 @@ The app implements date-based countdowns and countups, the shared single-smile f
 1. Open `CountdownApp.xcodeproj` in Xcode 15 or newer.
 2. Choose the **CountdownApp** scheme and an iPhone simulator running iOS 17+.
 3. Run. The normal app starts with an empty collection; “Try a few examples” creates editable local examples.
-4. To install on a phone, select your development team and replace the placeholder `com.example.countdownapp` bundle identifier in the app target's Signing & Capabilities settings.
+4. To install on a phone, sign into the Apple Developer account for team `MD42BG8ZP4` (the same team as StepFurr) and replace the placeholder `com.example.countdownapp` bundle identifier in the app target's Signing & Capabilities settings. Automatic signing and the team are configured for both app and test targets.
 
 Node, npm, FontTools, and XcodeGen are **not required to run the included project**. Fonts, vector components, the app icon, and shared scheme are included.
 
@@ -56,7 +56,7 @@ npm ci
 npm run check
 ```
 
-After adding/removing Swift files, regenerate the checked-in Xcode project with `npm run project`. This resets its signing placeholders, so reapply your team/bundle identifier afterward. `npm run icon` regenerates the opaque app icon from `docs/design/app-icon.svg`. `npm run package` creates a source archive for transferring to a Mac.
+After adding/removing Swift files, regenerate the checked-in Xcode project with `npm run project`. The generator preserves team `MD42BG8ZP4`; update bundle identifiers in `scripts/generate-project.mjs` when finalizing them so regeneration retains your changes. `npm run icon` regenerates the opaque app icon from `docs/design/app-icon.svg`. `npm run package` creates a source archive for transferring to a Mac.
 
 ## Fonts and design
 

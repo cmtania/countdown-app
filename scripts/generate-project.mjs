@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 
 const id = value => crypto.createHash('sha256').update(`CountdownApp:${value}`).digest('hex').slice(0, 24).toUpperCase();
 const q = JSON.stringify;
+const developmentTeam = 'MD42BG8ZP4'; // Same Apple Developer team as StepFurr.
 const objects = [];
 const add = (key, body) => { objects.push({ isa: body.match(/^isa = (\w+)/)[1], text: `${id(key)} = { ${body} };` }); return id(key); };
 const list = values => `(${values.map(v => `${v},`).join(' ')})`;
@@ -49,8 +50,8 @@ function configs(name, settings) {
   return add(`configs:${name}`, `isa = XCConfigurationList; buildConfigurations = ${list(configs)}; defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;`);
 }
 const projectConfigs = configs('project', { CLANG_ENABLE_MODULES: 'YES', CLANG_ENABLE_OBJC_ARC: 'YES', SWIFT_VERSION: '5.0', IPHONEOS_DEPLOYMENT_TARGET: '17.0', SDKROOT: 'iphoneos', TARGETED_DEVICE_FAMILY: '1', SWIFT_STRICT_CONCURRENCY: 'targeted' });
-const appConfigs = configs('app', { PRODUCT_NAME: '$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER: 'com.example.countdownapp', INFOPLIST_FILE: 'CountdownApp/Resources/Info.plist', GENERATE_INFOPLIST_FILE: 'NO', ASSETCATALOG_COMPILER_APPICON_NAME: 'AppIcon', ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: 'AccentColor', CURRENT_PROJECT_VERSION: '1', MARKETING_VERSION: '1.0', CODE_SIGN_STYLE: 'Automatic', DEVELOPMENT_TEAM: '', SWIFT_EMIT_LOC_STRINGS: 'YES', SUPPORTED_PLATFORMS: 'iphoneos iphonesimulator', SUPPORTS_MACCATALYST: 'NO', SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: 'NO', LD_RUNPATH_SEARCH_PATHS: '$(inherited) @executable_path/Frameworks' });
-const testConfigs = configs('tests', { PRODUCT_NAME: '$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER: 'com.example.countdownapp.tests', GENERATE_INFOPLIST_FILE: 'YES', TEST_HOST: '$(BUILT_PRODUCTS_DIR)/CountdownApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CountdownApp', BUNDLE_LOADER: '$(TEST_HOST)', CODE_SIGN_STYLE: 'Automatic', LD_RUNPATH_SEARCH_PATHS: '$(inherited) @executable_path/Frameworks @loader_path/Frameworks' });
+const appConfigs = configs('app', { PRODUCT_NAME: '$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER: 'com.example.countdownapp', INFOPLIST_FILE: 'CountdownApp/Resources/Info.plist', GENERATE_INFOPLIST_FILE: 'NO', ASSETCATALOG_COMPILER_APPICON_NAME: 'AppIcon', ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: 'AccentColor', CURRENT_PROJECT_VERSION: '1', MARKETING_VERSION: '1.0', CODE_SIGN_STYLE: 'Automatic', DEVELOPMENT_TEAM: developmentTeam, SWIFT_EMIT_LOC_STRINGS: 'YES', SUPPORTED_PLATFORMS: 'iphoneos iphonesimulator', SUPPORTS_MACCATALYST: 'NO', SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: 'NO', LD_RUNPATH_SEARCH_PATHS: '$(inherited) @executable_path/Frameworks' });
+const testConfigs = configs('tests', { PRODUCT_NAME: '$(TARGET_NAME)', PRODUCT_BUNDLE_IDENTIFIER: 'com.example.countdownapp.tests', GENERATE_INFOPLIST_FILE: 'YES', TEST_HOST: '$(BUILT_PRODUCTS_DIR)/CountdownApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CountdownApp', BUNDLE_LOADER: '$(TEST_HOST)', CODE_SIGN_STYLE: 'Automatic', DEVELOPMENT_TEAM: developmentTeam, LD_RUNPATH_SEARCH_PATHS: '$(inherited) @executable_path/Frameworks @loader_path/Frameworks' });
 const proxy = add('proxy:app', `isa = PBXContainerItemProxy; containerPortal = ${id('project')}; proxyType = 1; remoteGlobalIDString = ${id('target:app')}; remoteInfo = CountdownApp;`);
 const dependency = add('dependency:app', `isa = PBXTargetDependency; target = ${id('target:app')}; targetProxy = ${proxy};`);
 add('target:app', `isa = PBXNativeTarget; buildConfigurationList = ${appConfigs}; buildPhases = ${list(appPhases)}; buildRules = (); dependencies = (); name = CountdownApp; productName = CountdownApp; productReference = ${appProduct}; productType = "com.apple.product-type.application";`);

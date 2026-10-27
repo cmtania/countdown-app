@@ -5,6 +5,7 @@
 ## Implemented in source
 
 - Native SwiftUI app and deterministic Xcode project generator, with a checked-in project and shared scheme.
+- Root `project.yml` for XcodeGen with matching app/test settings, resources, signing team, and scheme; the source archive includes it.
 - Both event types, CRUD flows, selection, browsing/search/tag filters, detailed views, share images, and trash/restore.
 - Core calendar logic, recurrence/leap policies, versioned storage, and load/write failure handling.
 - Canonical vector face, themed calendar tickets, five illustrated motifs, bundled fonts/license, and editable app icon.
@@ -16,6 +17,7 @@
 
 - Swift syntax parsed for every app and test source using the Swift Tree-sitter grammar.
 - Xcode project parsed; all source and resource paths resolved.
+- XcodeGen YAML parsed and checked against generated build settings; font-folder copying and test-scheme configuration checked. XcodeGen execution itself requires the Mac validation below.
 - Info.plist and privacy manifest parsed.
 - Three distinct bundled PostScript font names verified against UIAppFonts.
 - App icon dimensions and opaque RGB PNG format verified; icon visually inspected.
@@ -31,6 +33,7 @@ On a Mac:
 
 ```sh
 swift test
+xcodegen generate --spec project.yml
 xcodebuild build-for-testing -project CountdownApp.xcodeproj -scheme CountdownApp -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
 ```
 

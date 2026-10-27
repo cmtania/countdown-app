@@ -56,7 +56,16 @@ npm ci
 npm run check
 ```
 
-After adding/removing Swift files, regenerate the checked-in Xcode project with `npm run project`. The generator preserves team `MD42BG8ZP4`; update bundle identifiers in `scripts/generate-project.mjs` when finalizing them so regeneration retains your changes. `npm run icon` regenerates the opaque app icon from `docs/design/app-icon.svg`. `npm run package` creates a source archive for transferring to a Mac.
+After adding/removing Swift files, regenerate the checked-in Xcode project with `npm run project`, or use XcodeGen on a Mac from the repository root:
+
+```sh
+xcodegen generate --spec project.yml
+open CountdownApp.xcodeproj
+```
+
+The root [project.yml](project.yml) declares the app, hosted unit tests, font folder, assets, privacy manifest, and shared scheme. Both generators preserve team `MD42BG8ZP4`. Keep signing settings and bundle identifiers synchronized between `project.yml` and `scripts/generate-project.mjs`; `npm run check` checks their settings against the generated project. The source archive includes the spec. See the [XcodeGen spec documentation](https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md) for its format.
+
+`npm run icon` regenerates the opaque app icon from `docs/design/app-icon.svg`. `npm run package` creates a source archive for transferring to a Mac.
 
 ## Fonts and design
 

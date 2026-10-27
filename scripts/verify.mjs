@@ -5,6 +5,7 @@ import swift from '@ast-grep/lang-swift';
 import { registerDynamicLanguage, parse } from '@ast-grep/napi';
 import xcode from 'xcode';
 import plist from 'plist';
+import { parse as parseYAML } from 'yaml';
 
 function walk(folder) {
   return fs.readdirSync(folder, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(`${folder}/${e.name}`) : [`${folder}/${e.name}`]);
@@ -26,12 +27,58 @@ console.log(`Swift syntax parsed: ${appSources.length} app sources, ${tests.leng
 const project = xcode.project('CountdownApp.xcodeproj/project.pbxproj');
 project.parseSync();
 const refs = project.pbxFileReferenceSection();
-const paths = new Set(Object.values(refs).filter(v => typeof v === 'object').map(v => v.path?.replace(/^"|"$/g, '')));
-for (const source of [...appSources, ...tests]) assert(paths.has(source), `Source absent from project: ${source}`);
-for (const [key, ref] of Object.entries(refs)) {
-  if (typeof ref !== 'object' || !ref.path || ref.sourceTree === 'BUILT_PRODUCTS_DIR') continue;
-  assert(fs.existsSync(ref.path.replace(/^"|"$/g, '')), `Missing project resource ${key}: ${ref.path}`);
+const objects = project.hash.project.objects;
+const unquote = value => String(value).replace(/^"|"$/g, '');
+const records = section => Object.entries(section ?? {}).filter(([, value]) => typeof value === 'object');
+const referenceID = ref => typeof ref === 'object' ? ref.value : ref;
+const groups = { ...objects.PBXGroup, ...objects.PBXVariantGroup };
+const projectObject = records(objects.PBXProject)[0][1];
+const paths = new Set();
+// XcodeGen uses nested groups; the portable generator uses SOURCE_ROOT paths.
+function resolveReference(id, parent = '') {
+  const ref = groups[id] ?? refs[id];
+  if (!ref || unquote(ref.sourceTree) === 'BUILT_PRODUCTS_DIR') return;
+  const sourceRoot = unquote(ref.sourceTree) === 'SOURCE_ROOT';
+  const relative = ref.path ? unquote(ref.path) : '';
+  const resolved = path.posix.normalize(path.posix.join(sourceRoot ? '' : parent, relative));
+  if (groups[id]) {
+    for (const child of ref.children ?? []) resolveReference(referenceID(child), resolved === '.' ? '' : resolved);
+  } else {
+    assert(fs.existsSync(resolved), `Missing project resource: ${resolved}`);
+    paths.add(resolved);
+  }
 }
+resolveReference(projectObject.mainGroup);
+for (const source of [...appSources, ...tests]) assert(paths.has(source), `Source absent from project: ${source}`);
+
+const spec = parseYAML(fs.readFileSync('project.yml', 'utf8'));
+assert.equal(spec.name, 'CountdownApp');
+assert.equal(spec.targets.CountdownApp.type, 'application');
+assert.equal(spec.targets.CountdownAppTests.type, 'bundle.unit-test');
+assert(spec.targets.CountdownAppTests.dependencies.some(d => d.target === 'CountdownApp'));
+assert(spec.schemes.CountdownApp.test.targets.includes('CountdownAppTests'));
+assert.equal(spec.schemes.CountdownApp.build.targets.CountdownApp, 'all');
+const fontsEntry = spec.targets.CountdownApp.sources.find(s => s.path === 'CountdownApp/Resources/Fonts');
+assert.equal(fontsEntry?.type, 'folder', 'Fonts must retain their bundle subdirectory');
+assert.equal(fontsEntry?.buildPhase, 'resources');
+assert(spec.targets.CountdownApp.sources.find(s => s.path === 'CountdownApp').excludes.includes('Resources'), 'Avoid duplicate resource compilation');
+for (const target of Object.values(spec.targets)) {
+  for (const source of target.sources) assert(fs.existsSync(source.path), `Missing spec source: ${source.path}`);
+}
+const normalizedSetting = value => Array.isArray(value) ? value.map(unquote).join(' ') : unquote(value);
+for (const [, target] of records(objects.PBXNativeTarget)) {
+  const name = unquote(target.name);
+  const expected = spec.targets[name];
+  assert(expected, `Generated target missing from project.yml: ${name}`);
+  const configList = objects.XCConfigurationList[target.buildConfigurationList];
+  for (const configRef of configList.buildConfigurations) {
+    const config = objects.XCBuildConfiguration[referenceID(configRef)];
+    for (const [key, value] of Object.entries(expected.settings.base)) {
+      assert.equal(normalizedSetting(config.buildSettings[key]), String(value), `${name}/${config.name}: project.yml differs for ${key}`);
+    }
+  }
+}
+console.log('XcodeGen spec parsed; target settings, scheme, source paths, and font-folder packaging verified.');
 const info = plist.parse(fs.readFileSync('CountdownApp/Resources/Info.plist', 'utf8'));
 const privacy = plist.parse(fs.readFileSync('CountdownApp/Resources/PrivacyInfo.xcprivacy', 'utf8'));
 assert.equal(privacy.NSPrivacyTracking, false);

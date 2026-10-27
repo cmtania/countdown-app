@@ -9,5 +9,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test date engine and persistence
         run: swift test
+      - name: Generate project with XcodeGen
+        run: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen generate --spec project.yml
       - name: Compile native app and test bundle
         run: xcodebuild build-for-testing -project CountdownApp.xcodeproj -scheme CountdownApp -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO

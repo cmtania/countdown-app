@@ -11,42 +11,69 @@ import UIKit
     @Environment(AppModel.self) private var model
     @State private var drag: CGFloat = 0
     @State private var lastStep = 0
+    @GestureState private var isDragging = false
 
     private var index: Int { values.firstIndex(of: value) ?? 0 }
-    private func neighbor(_ offset: Int) -> String {
-        let i = index + offset
-        return values.indices.contains(i) ? display(values[i]) : "·"
-    }
+    private var motionEnabled: Bool { !reduceMotion && !model.preferences.gentleMotion }
+    private var selectionMotion: Animation? { motionEnabled ? .spring(response: 0.30, dampingFraction: 0.86) : nil }
 
     var body: some View {
         VStack(spacing: 12) {
             GeometryReader { proxy in
                 let size = min(proxy.size.width, proxy.size.height)
+                let stepDistance = max(1, size * 0.25)
                 ZStack {
                     Circle().fill(Color(hex: 0xFFFCF5)).shadow(color: Palette.ink.opacity(0.05), radius: 8, y: 3)
                     ForEach(0..<60) { tick in
                         Rectangle().fill(Palette.muted.opacity(0.40)).frame(width: 1, height: tick % 5 == 0 ? 8 : 5)
-                            .offset(y: -size / 2 + 12).rotationEffect(.degrees(Double(tick) * 6 + Double(drag) * 0.2))
+                            .offset(y: -size / 2 + 12)
+                            .rotationEffect(.degrees(Double(tick) * 6 + (motionEnabled ? Double(index) * 6 - Double(drag / stepDistance) * 6 : 0)))
+                            .animation(selectionMotion, value: value)
                     }
-                    VStack(spacing: 4) {
-                        Text(neighbor(-1)).font(TypeStyle.bold(size * 0.12)).foregroundStyle(Palette.muted.opacity(0.55))
-                        Text(display(value)).font(TypeStyle.heavy(size * (title == "MONTH" ? 0.21 : 0.31)))
-                            .lineLimit(1).minimumScaleFactor(0.5)
-                            .contentTransition(reduceMotion || model.preferences.gentleMotion ? .identity : title == "MONTH" ? .opacity : .numericText())
-                        Text(neighbor(1)).font(TypeStyle.bold(size * 0.12)).foregroundStyle(Palette.muted.opacity(0.55))
-                    }.offset(y: drag * 0.09)
+                    // Stable identities let each value travel between the neighbor
+                    // and selected positions instead of replacing the center text.
+                    ZStack {
+                        ForEach(Array(values.enumerated()), id: \.element) { position, candidate in
+                            let distance = position - index
+                            Text(display(candidate))
+                                .font(TypeStyle.heavy(size * (title == "MONTH" ? 0.21 : 0.31)))
+                                .lineLimit(1).minimumScaleFactor(0.5)
+                                .scaleEffect(distance == 0 ? 1 : (title == "MONTH" ? 0.57 : 0.39))
+                                .frame(width: size * 0.64, height: stepDistance)
+                                .contentShape(Rectangle())
+                                .onTapGesture { change(distance) }
+                                .foregroundStyle(Palette.ink.opacity(distance == 0 ? 1 : 0.42))
+                                .offset(y: CGFloat(distance) * stepDistance + drag)
+                                .opacity(abs(distance) <= 2 ? 1 : 0)
+                                .allowsHitTesting(abs(distance) == 1)
+                        }
+                    }
+                    .frame(width: size * 0.66, height: size * 0.73)
+                    .mask(LinearGradient(stops: [
+                        .init(color: .clear, location: 0), .init(color: .white, location: 0.12),
+                        .init(color: .white, location: 0.88), .init(color: .clear, location: 1)
+                    ], startPoint: .top, endPoint: .bottom))
+                    .clipped()
+                    .animation(selectionMotion, value: value)
                     Circle().fill(Palette.ink).frame(width: size * 0.1, height: size * 0.1)
-                        .offset(x: size * 0.35, y: 0)
+                        .offset(x: size * 0.35, y: motionEnabled ? drag * 0.1 : 0)
                 }.frame(width: size, height: size).contentShape(Circle())
                     .gesture(DragGesture(minimumDistance: 8)
+                        .updating($isDragging) { _, active, _ in active = true }
                         .onChanged { gesture in
-                            drag = reduceMotion || model.preferences.gentleMotion ? 0 : gesture.translation.height.truncatingRemainder(dividingBy: 34)
-                            let step = Int((-gesture.translation.height / 34).rounded(.towardZero))
+                            let step = Int((-gesture.translation.height / stepDistance).rounded(.towardZero))
                             if step != lastStep { change(step - lastStep); lastStep = step }
+                            let remainder = gesture.translation.height + CGFloat(step) * stepDistance
+                            let atBoundary = (index == 0 && remainder > 0) || (index == values.count - 1 && remainder < 0)
+                            drag = motionEnabled ? remainder * (atBoundary ? 0.15 : 1) : 0
                         }
-                        .onEnded { _ in
+                        .onEnded { gesture in
+                            // Snap to the closest value without momentum skipping
+                            // over a date the user did not deliberately select.
+                            let step = Int((-gesture.translation.height / stepDistance).rounded())
+                            change(step - lastStep)
                             lastStep = 0
-                            withAnimation(model.motion(reduceMotion: reduceMotion)) { drag = 0 }
+                            withAnimation(selectionMotion) { drag = 0 }
                         })
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(title == "MONTH" ? "Month" : "Day")
@@ -59,12 +86,22 @@ import UIKit
             }.aspectRatio(1, contentMode: .fit)
             Text(title).font(TypeStyle.regular(11)).tracking(1.5)
         }
+        .onChange(of: motionEnabled) { _, enabled in
+            if !enabled { drag = 0 }
+        }
+        .onChange(of: isDragging) { _, active in
+            if !active {
+                lastStep = 0
+                withAnimation(selectionMotion) { drag = 0 }
+            }
+        }
+        .onDisappear { drag = 0; lastStep = 0 }
     }
 
     private func change(_ delta: Int) {
         let next = min(values.count - 1, max(0, index + delta))
         guard values.indices.contains(next), values[next] != value else { return }
-        withAnimation(model.motion(reduceMotion: reduceMotion)) { value = values[next] }
+        withAnimation(selectionMotion) { value = values[next] }
         onStep()
     }
 }

@@ -11,6 +11,7 @@
 - Canonical vector face, themed calendar tickets, five illustrated motifs, bundled fonts/license, and editable app icon.
 - Reference-based home/editor layout, responsive ticket proportions, illustrated scenery for all five motifs, and custom calendar-arrow navigation. Twelve reproducible SVG designs are exported into native asset catalogs at three scales.
 - Calendar-eye picker plus native date picker, motion/haptics preferences, and accessibility affordances.
+- Animated month/day reels with neighbor taps, spring snapping, synchronized dial rotation, and reduced-motion handling. Native gesture feel and rendering remain unverified on this host.
 - Opt-in local reminders and notification routing, with serialized scheduling reconciliation.
 - Source-only deterministic demo mode that leaves the saved collection untouched.
 

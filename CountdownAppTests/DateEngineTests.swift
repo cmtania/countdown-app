@@ -13,6 +13,21 @@ final class DateEngineTests: XCTestCase {
         CountEvent(kind: kind, title: "Test date", date: date, recurrence: rule)
     }
 
+    func testDefaultCalendarUsesCurrentLocaleForMonthNames() {
+        let value = DateEngine()
+        XCTAssertEqual(value.calendar.locale?.identifier, Locale.autoupdatingCurrent.identifier)
+        XCTAssertEqual(value.calendar.identifier, .gregorian)
+    }
+
+    func testEnglishMonthWheelShowsNamesInsteadOfGenericLabels() {
+        let expected = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+        for identifier in ["en_US", "en_PH"] {
+            let value = DateEngine(locale: Locale(identifier: identifier))
+            let labels = value.calendar.shortMonthSymbols.map { $0.uppercased() }
+            XCTAssertEqual(labels, expected, "Unexpected month labels for \(identifier)")
+        }
+    }
+
     func testReferenceCountsAndBreakdown() {
         let instant = now(2026, 10, 27)
         let days = engine.count(for: event(day(2026, 11, 14)), at: instant)

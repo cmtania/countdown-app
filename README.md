@@ -4,7 +4,7 @@ Native SwiftUI iPhone app source, targeting iOS 17+. The final product name is u
 
 The app implements date-based countdowns and countups, the shared single-smile face, bundled Nunito typography, calendar tickets, circular date selectors, and gentle motion. It has no web runtime or third-party app dependencies.
 
-**This source has not been compiled or run in Xcode on this Windows machine.** Swift grammar, Xcode structure, resource, font, and icon checks pass. Nineteen XCTest cases are included but have not been executed here. See [validation and remaining release work](docs/BUILD_STATUS.md).
+**This source has not been compiled or run in Xcode on this Windows machine.** Swift grammar, Xcode structure, resource, font, and icon checks pass. Twenty-one XCTest cases are included but have not been executed here. See [validation and remaining release work](docs/BUILD_STATUS.md).
 
 ## Run on a Mac
 

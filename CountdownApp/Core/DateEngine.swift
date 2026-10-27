@@ -3,8 +3,11 @@ import Foundation
 struct DateEngine {
     var calendar: Calendar
 
-    init(timeZone: TimeZone = .current) {
+    init(timeZone: TimeZone = .current, locale: Locale = .autoupdatingCurrent) {
         var value = Calendar(identifier: .gregorian)
+        // A calendar without a locale can return generic M1–M12 month symbols.
+        // Keep Gregorian date arithmetic, but localize the date wheel's names.
+        value.locale = locale
         value.timeZone = timeZone
         calendar = value
     }

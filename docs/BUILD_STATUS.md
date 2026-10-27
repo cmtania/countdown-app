@@ -37,7 +37,7 @@ xcodegen generate --spec project.yml
 xcodebuild build-for-testing -project CountdownApp.xcodeproj -scheme CountdownApp -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
 ```
 
-Then run Product → Test and the app on an available iPhone simulator. The 19 tests cover reference counts, same-day/past events, recurrence boundaries, leap-day policies, DST, time zones, invalid dates, storage round trips, corrupted files, unsupported versions, duplicate IDs, and write failures.
+Then run Product → Test and the app on an available iPhone simulator. The 21 tests cover reference counts, same-day/past events, recurrence boundaries, leap-day policies, DST, time zones, invalid dates, localized month-wheel labels, storage round trips, corrupted files, unsupported versions, duplicate IDs, and write failures.
 
 Visually inspect a small iPhone and a large iPhone with standard and accessibility text sizes. Check the long title and multi-digit count layouts, form keyboard, screen-reader adjustable actions, and reduced motion. Test reminders after edits/deletion, changes to notification permission, and time-zone changes on a physical phone.
 

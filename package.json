@@ -1,0 +1,19 @@
+{
+  "name": "countdown-native-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "project": "node scripts/generate-project.mjs",
+    "icon": "node scripts/generate-icon.mjs",
+    "check": "node scripts/verify.mjs",
+    "test:core": "swift test",
+    "package": "node scripts/package-source.mjs"
+  },
+  "devDependencies": {
+    "@ast-grep/napi": "0.51.0",
+    "@ast-grep/lang-swift": "0.0.8",
+    "plist": "3.1.1",
+    "sharp": "0.35.5",
+    "xcode": "3.0.1"
+  }
+}

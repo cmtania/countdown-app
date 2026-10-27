@@ -1,0 +1,13 @@
+name: Native checks
+on:
+  push:
+  pull_request:
+jobs:
+  native:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test date engine and persistence
+        run: swift test
+      - name: Compile native app and test bundle
+        run: xcodebuild build-for-testing -project CountdownApp.xcodeproj -scheme CountdownApp -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO

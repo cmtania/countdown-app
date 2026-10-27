@@ -1,0 +1,10 @@
+.DS_Store
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+node_modules/
+artifacts/
+.swiftpm/
+.tools/
+
